@@ -46,18 +46,17 @@ void HamiltonianForceFieldBase::init() {
     // * 4 load the force field parameters from topology files and get total masses.
     std::vector<std::string> files; 
     SplitString(files, param.getStr("topology"), ',');
-    //check by xugong
-    std::cout<<"1"<<std::endl; 
+     
     // Reset DOFe to the number of topology files (input value is ignored),
     // since number of states (DOFe) must equal to the number of topology files.
     DOFe = param.getInt("DOFe");
-    std::cout<<"2"<<std::endl;
+    
     // * 5 Reset DOFe to the number of FFList.
     std::vector<Topology> topologies(DOFe); 
     forcefield_type = param.getStr("forcefield_type");
     static const bool polar_obs = param.getBool("polar_obs");
     static const bool perturb = param.getBool("perturb");
-    std::cout<<"3"<<std::endl;
+    
     if (forcefield_type == "nonPolar") {
         if (polar_obs || perturb) {
             for(int i = 0; i < DOFe; ++i) {
@@ -77,13 +76,10 @@ void HamiltonianForceFieldBase::init() {
     }
     else 
         throw std::runtime_error("ERROR: Unsupported forcefield_type: " + forcefield_type);
-    std::cout<<"4"<<std::endl;
+    
     for (int i = 0; i < DOFe; ++i) {
-	std::cout<<"5"<<std::endl;
         topologies[i].loadTopologyFile(files[i]);
-	std::cout<<"6"<<std::endl;
         FFList[i]->setTopologies(topologies[i]);
-	std::cout<<"7"<<std::endl;
         FFList[i]->init();
 	std::cout<<"8"<<std::endl;
         std::cout << "Loaded topology from file: " << files[i] << std::endl;
