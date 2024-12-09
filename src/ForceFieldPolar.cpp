@@ -189,7 +189,7 @@ void ForceFieldPolar::calculateDipoleRleftAright() {
     dirRx = yy * xx/zz;
 }
 
-void ForceFieldPolar::calculatePiTensor() { //gongxu
+void ForceFieldPolar::calculatePiTensor() { // Revised bu Xu Gong on Dec 9, 2024
     // calculate the many-body polarizability as a function of configuration using iteration method
     // to iter_max order or already converged. Return actual iteration times.
     double pi1[9 * DOFn];
@@ -201,11 +201,14 @@ void ForceFieldPolar::calculatePiTensor() { //gongxu
     double m1[3][3]={0,0,0,0,0,0,0,0,0};  //for swap matrix
     double m2[3][3]={0,0,0,0,0,0,0,0,0};  //for swap matrix
     double tol(1); //tolerance
+    double tol_new(1);//tolerance is the sqrt(\sum_{i = 0, j = 0}^{N, 9} (pi_{ij}^{(n+1)} - pi_{ij}^{(n)})^2), this is the MBX tolarence treatment, and you can find in the path /gpfsnyu/xspace/sungroup/software/MBX-old/plugins/i-pi/src/utils/perturb.cpp. update by Xu Gong on Dec 9, 2024.
     int n(0);  //iteration count
     // For Thole model
     double r, r2, rm1, rm2, rm3, rm5;
     double alphaij, Ralphaij, Ralphaij2, Ralphaij4;
     double S0r, S1r, S2r, S3r;
+    double polar_converge_damp;
+    polar_converge_damp = param.getDouble("polar_converge_damp");// Get  polar_converge parameter to accelerate the convergence, or overcome non convergent problem.
     std::vector<double> S1rP;
     std::vector<double> S2rP;
     std::cout.precision(12);
@@ -274,9 +277,10 @@ void ForceFieldPolar::calculatePiTensor() { //gongxu
             S2rP[i * DOFn + j] = S2r;
         }
     }
-    while ( tol > TOLERANCE && n< iter_max ) {
+    while ( tol_new > TOLERANCE && n< iter_max ) {
         n++;  
         // Save Pi_prev<=Pi
+        tol_new = 0;
         for (int a = 0; a < 3; a++) {
             for (int b = 0; b < 3;b++) {
                 Pi_prev[a][b] = Pi[a][b];
@@ -332,8 +336,17 @@ void ForceFieldPolar::calculatePiTensor() { //gongxu
             pi2[i* 9 + 0] += 1;
             pi2[i* 9 + 4] += 1;
             pi2[i* 9 + 8] += 1; 
+            // Using polar_convergence damping parameter to accelerate converge.
             for (int k = 0; k < 9; k++) {
                 pi2[i * 9 + k] *= alpha[i];
+            }
+            for (int k = 0; k < 9; k++) {
+                pi2[i * 9 + k] *= polar_converge_damp;
+                pi2[i * 9 + k] += (1.0 - polar_converge_damp) * pi1[i * 9 + k];
+            }
+            // calculate tolarence, and you can find the equation in the tol_new definition.
+            for (int k = 0; k < 9; k++) {
+                tol_new += pow((pi2[i * 9 + k] - pi1[i * 9 + k]) , 2.0);
             }   
         } 
         // Calculate many-body polarizability Pi[3][3] (sum up i=1...N)
@@ -349,6 +362,7 @@ void ForceFieldPolar::calculatePiTensor() { //gongxu
         }
         // Calculate tolerance
         tol = 0;
+        tol_new = sqrt(tol_new);
         for (int a = 0; a < 3; a++) {
             for (int b = 0; b < 3; b++) {
                 tol += abs(Pi[a][b] - Pi_prev[a][b]);

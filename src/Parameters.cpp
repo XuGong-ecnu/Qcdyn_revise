@@ -211,7 +211,7 @@ void AddDefaultParameters(Parameters& param) {
     defaultParam.emplace_back("dampingParam1",            "",       "double"   );
     defaultParam.emplace_back("dampingParam2",            "",       "double"   );
     defaultParam.emplace_back("dampingParam3",            "",       "double"   );
-    defaultParam.emplace_back("xxxxxx",            "",       "double"   ); //gongxu
+    defaultParam.emplace_back("polar_converge_damp",      "0.8",       "double"   ); //This is oke converge damp parameter, add by Xu Gong, update on Dec, 9, 2024.
     // This is for C60 model vdw model
     defaultParam.emplace_back("LJ_type",                 "",           "str"   );
     // Settings for MixPES dyn_type
